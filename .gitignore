@@ -1,0 +1,27 @@
+# Streamlit local secrets
+.streamlit/secrets.toml
+
+# Exclude local brainstorms/PDFs you don't want public
+tempIdea.pdf
+
+# Exclude old test scripts if you want to keep them off GitHub
+firstOne.py
+app.py
+appv2.py
+appv3.py
+appv4.py
+appv5.py
+chatGemma4.py
+connectGemma.py
+run_analysis.py
+keys
+qualities
+
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.DS_Store
