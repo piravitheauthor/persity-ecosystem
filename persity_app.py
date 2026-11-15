@@ -1,14 +1,14 @@
 from datetime import datetime
 import re
-import google.generativeai as genai  # <-- Gemini SDK
+from google import genai  # <-- Gemini SDK
 import streamlit as st
 
 # --- GEMINI API CONFIGURATION ---
 # Safely fetches from st.secrets (Streamlit Cloud) or falls back to a placeholder for local testing
 api_key = st.secrets.get("GEMINI_API_KEY", "YOUR_LOCAL_TEST_KEY")
-genai.configure(api_key=api_key)
+# Initialize the client with your API key
+client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
-# Use Gemini 2.5 Flash (fast, lightweight, and ideal for interactive apps)
 model_name = "gemini-3.5-flash-lite"
 
 def generate_download_report():
@@ -291,16 +291,16 @@ with tab_traits:
 
             try:
               with st.spinner("Asking Gemini to generate tailored questions..."):
-              # Initialize Gemini model with system instructions
-                model = genai.GenerativeModel(
-                  model_name=model_name,
-                  system_instruction=system_prompt,
+                from google.genai import types
+
+                # Start a chat session using the new client API with system instructions
+                chat = client.chats.create(
+                    model=model_name,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_prompt
+                    ),
                 )
-                # Start a chat session to maintain conversation history
-                chat = model.start_chat(history=[])
-                st.session_state.gemini_chat = (
-                  chat  # Save chat session in state
-                )
+                st.session_state.gemini_chat = chat  # Save chat session in state
 
                 response = chat.send_message(initial_user_message)
                 assistant_reply = response.text
@@ -335,9 +335,25 @@ with tab_traits:
 
         try:
           with st.spinner("Analyzing answers and calculating trait weights..."):
-            # Use the existing active chat session to maintain full context
-            chat = st.session_state.gemini_chat
-            response = chat.send_message(user_answers)
+            from google import genai
+            from google.genai import types
+
+            # Re-initialize a fresh client to prevent closed-client errors
+            fresh_client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+
+            # Recreate the chat session using the saved system instructions and history
+            chat = fresh_client.chats.create(
+                model=model_name,
+                config=types.GenerateContentConfig(
+                    system_instruction=system_prompt
+                ),
+            )
+            
+            # Feed previous context back into the fresh chat session if needed, 
+            # or send the accumulated user input directly
+            response = chat.send_message(
+                f"Date of Birth - {st.session_state.get('user_dob')}\nAttributes: {str(st.session_state.get('traits_list'))}\n\nUser Answers: {user_answers}"
+            )
             final_reply = response.text
 
             st.session_state.final_result = final_reply
@@ -412,16 +428,12 @@ Format strictly as follows:
 
         try:
           with st.spinner("Crafting social profiles based on tuned weights..."):
-            # For independent one-off prompts, use a clean model instance
-            profile_model = genai.GenerativeModel(model_name=model_name)
-            resp = profile_model.generate_content(profile_prompt)
-            profiles_output = resp.text
-
-            st.session_state.generated_profiles = profiles_output
-            st.success(
-                "Profiles generated! Switch to the '📱 Social Profiles' tab to"
-                " view them."
+            # For independent one-off prompts, use client.models.generate_content
+            resp = client.models.generate_content(
+                model=model_name,
+                contents=profile_prompt
             )
+            profiles_output = resp.text
 
         except Exception as e:
           st.error(f"Error generating profiles: {e}")
