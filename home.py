@@ -13,7 +13,7 @@ with col1:
   st.page_link(
       "persity_app.py", label="Personality & Behaviour Analysis", icon="🧠"
   )
-  st.write("For more information or a further dialog on introspection, you can reach out to us at Persity at [piravi.theauthor@gmail.com](mailto:piravi.theauthor@gmail.com)")
+  st.write("For more information or a further dialog on introspection, you can reach out to Persity at [piravi.theauthor@gmail.com](mailto:piravi.theauthor@gmail.com)")
 
 with col2:
   st.markdown('<h2><a href="authorship" target="_self" style="text-decoration: none;">Authorship & Services</a></h2>', unsafe_allow_html=True)
